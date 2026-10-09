@@ -1,1 +1,220 @@
-test
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>منظومة التبرع بالدم - مستشفى عين مارة القروي</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--red:#b3141f;--dark:#2b2d33;--bg:#f5f5f7;--ok:#1f9d55;--no:#d93025}
+*{box-sizing:border-box}
+body{margin:0;font-family:Cairo,Tahoma,sans-serif;background:var(--bg);color:var(--dark)}
+header{background:var(--red);color:#fff;text-align:center;padding:22px 12px}
+header h1{margin:0;font-size:1.5rem}header p{margin:4px 0 0;opacity:.9}
+.stats{display:flex;gap:12px;justify-content:center;padding:14px;flex-wrap:wrap}
+.stat{background:#fff;border-radius:10px;padding:10px 24px;text-align:center;box-shadow:0 1px 4px #0002}
+.stat b{display:block;font-size:1.6rem;color:var(--red)}
+nav{display:flex;justify-content:center;gap:8px;padding:0 10px 10px;flex-wrap:wrap}
+nav button{border:0;background:#fff;padding:10px 20px;border-radius:8px;font:inherit;cursor:pointer;font-weight:600}
+nav button.on{background:var(--dark);color:#fff}
+main{max-width:900px;margin:auto;padding:0 12px 40px}
+section{display:none;background:#fff;border-radius:12px;padding:18px;box-shadow:0 1px 4px #0002}
+section.on{display:block}
+label{display:block;font-weight:600;margin:10px 0 4px}
+input,select{width:100%;padding:10px;border:1px solid #ccc;border-radius:8px;font:inherit}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+@media(max-width:600px){.grid{grid-template-columns:1fr}}
+.btn{background:var(--red);color:#fff;border:0;padding:11px 22px;border-radius:8px;font:inherit;font-weight:700;cursor:pointer;margin-top:14px}
+.btn.s{padding:5px 10px;margin:2px;font-size:.85rem;background:var(--dark)}.btn.d{background:var(--no)}
+.card{border:1px solid #e3e3e3;border-radius:10px;padding:12px;margin-top:10px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.bt{background:var(--red);color:#fff;border-radius:8px;padding:2px 10px;font-weight:700;direction:ltr;display:inline-block}
+.tag{padding:2px 10px;border-radius:12px;color:#fff;font-size:.85rem}
+.tag.ok{background:var(--ok)}.tag.no{background:var(--no)}
+a.call{background:var(--ok);color:#fff;text-decoration:none;padding:8px 16px;border-radius:8px;font-weight:700}
+.msg{margin-top:10px;font-weight:600}
+.tw{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:.9rem}
+th,td{padding:8px;border-bottom:1px solid #eee;text-align:right;white-space:nowrap}th{background:#fafafa}
+dialog{border:0;border-radius:12px;max-width:520px;width:92%}
+footer{text-align:center;color:#777;padding:20px;font-size:.9rem}
+</style>
+</head>
+<body>
+<header><h1>🩸 منظومة التبرع بالدم</h1><p>مستشفى عين مارة القروي</p></header>
+<div class="stats"><div class="stat"><b id="sTotal">–</b>إجمالي المتبرعين</div><div class="stat"><b id="sAvail">–</b>متاحون حالياً</div></div>
+<nav>
+<button class="on" data-t="reg">تسجيل متبرع</button>
+<button data-t="search">بحث وطلب مستعجل</button>
+<button data-t="admin">لوحة المشرفين</button>
+</nav>
+<main>
+<section id="reg" class="on">
+<h2>سجّل كمتبرع</h2>
+<form id="regForm" onsubmit="return false">
+<div class="grid">
+<div><label>الاسم الثلاثي</label><input id="rName" required></div>
+<div><label>فصيلة الدم</label><select id="rBlood" class="bsel"></select></div>
+<div><label>رقم الهاتف</label><input id="rPhone" type="tel" required></div>
+<div><label>مكان السكن / المنطقة</label><input id="rLoc" required></div>
+<div><label>العمر</label><input id="rAge" type="number" min="1" max="100" required></div>
+<div><label>تاريخ آخر تبرع (اختياري)</label><input id="rLast" type="date"></div>
+<div><label>هل تعاني من أمراض مزمنة؟</label><select id="rChr"><option>لا</option><option>نعم</option></select></div>
+</div>
+<button class="btn" id="rBtn">تسجيل</button>
+<div class="msg" id="rMsg"></div>
+</form>
+</section>
+
+<section id="search">
+<h2>البحث عن متبرعين</h2>
+<label>فصيلة الدم المطلوبة</label>
+<select id="qBlood" class="bsel"></select>
+<div id="qRes"></div>
+</section>
+
+<section id="admin">
+<div id="aLogin">
+<h2>دخول المشرفين</h2>
+<label>رمز المرور</label><input id="aPass" type="password">
+<button class="btn" onclick="adminLogin()">دخول</button>
+<div class="msg" id="aMsg"></div>
+</div>
+<div id="aPanel" style="display:none">
+<h2>إدارة المتبرعين</h2>
+<input id="aQ" placeholder="بحث بالاسم أو الفصيلة..." oninput="renderAdmin()">
+<button class="btn s" onclick="exportCSV()">تصدير CSV</button>
+<div class="tw"><table><thead><tr><th>الاسم</th><th>الفصيلة</th><th>الهاتف</th><th>المنطقة</th><th>العمر</th><th>آخر تبرع</th><th>مزمن</th><th>الحالة</th><th>إجراءات</th></tr></thead><tbody id="aBody"></tbody></table></div>
+</div>
+</section>
+</main>
+
+<dialog id="dlg">
+<h3>تعديل بيانات المتبرع</h3>
+<div class="grid">
+<div><label>الاسم</label><input id="eName"></div>
+<div><label>الفصيلة</label><select id="eBlood" class="bsel"></select></div>
+<div><label>الهاتف</label><input id="ePhone"></div>
+<div><label>المنطقة</label><input id="eLoc"></div>
+<div><label>العمر</label><input id="eAge" type="number"></div>
+<div><label>آخر تبرع</label><input id="eLast" type="date"></div>
+<div><label>أمراض مزمنة</label><select id="eChr"><option>لا</option><option>نعم</option></select></div>
+</div>
+<button class="btn" onclick="saveEdit()">حفظ</button>
+<button class="btn d" onclick="dlg.close()">إلغاء</button>
+</dialog>
+
+<footer>برمجة وتطوير: عيسى العوامي</footer>
+
+<script>
+const SCRIPT_URL = 'ضع_رابط_Web_App_هنا';
+const BLOODS = ['O+','O-','A+','A-','B+','B-','AB+','AB-'];
+let pub = [], adm = [], pass = '', editId = null;
+const dlg = document.getElementById('dlg');
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+document.querySelectorAll('.bsel').forEach(s => s.innerHTML = BLOODS.map(b => `<option>${b}</option>`).join(''));
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('nav button,section').forEach(e => e.classList.remove('on'));
+  b.classList.add('on'); $(b.dataset.t).classList.add('on');
+});
+
+// منطق الجاهزية (قاعدة 90 يوماً)
+function status(r) {
+  if (Number(r.Age) < 18 || r.ChronicDiseases === 'نعم') return 'غير متاح';
+  if (!r.LastDonationDate) return 'متاح للتبرع';
+  return (Date.now() - new Date(r.LastDonationDate)) / 864e5 >= 90 ? 'متاح للتبرع' : 'غير متاح';
+}
+async function post(body) {
+  if (SCRIPT_URL.includes('ضع_رابط')) throw 'لم يتم ضبط SCRIPT_URL في index.html';
+  const r = await fetch(SCRIPT_URL, {method:'POST', body: JSON.stringify(body)}); // text/plain لتجنب preflight
+  return r.json();
+}
+async function loadPublic() {
+  try {
+    if (SCRIPT_URL.includes('ضع_رابط')) throw 'SCRIPT_URL';
+    const r = await (await fetch(SCRIPT_URL + '?action=list')).json();
+    pub = r.data || []; $('sTotal').textContent = r.total; $('sAvail').textContent = r.available;
+    renderSearch();
+  } catch (e) { $('sTotal').textContent = '!'; }
+}
+
+// تسجيل
+$('rBtn').onclick = async () => {
+  const d = {Name:$('rName').value.trim(), BloodType:$('rBlood').value, Phone:$('rPhone').value.trim(),
+    Location:$('rLoc').value.trim(), Age:$('rAge').value, LastDonationDate:$('rLast').value, ChronicDiseases:$('rChr').value};
+  const m = $('rMsg');
+  if (!d.Name || !d.Phone || !d.Location || !d.Age) { m.style.color = 'var(--no)'; m.textContent = 'يرجى تعبئة الحقول المطلوبة'; return; }
+  if (Number(d.Age) < 18) { m.style.color = 'var(--no)'; m.textContent = 'عذراً، يشترط أن يكون العمر 18 سنة فأكثر'; return; }
+  m.style.color = '#555'; m.textContent = 'جاري التسجيل...';
+  try {
+    const r = await post({action:'add', donor:d});
+    if (!r.ok) throw r.error;
+    m.style.color = 'var(--ok)'; m.textContent = 'تم التسجيل. حالتك: ' + r.status + '. شكراً لك!';
+    $('regForm').reset(); loadPublic();
+  } catch (e) { m.style.color = 'var(--no)'; m.textContent = 'تعذر التسجيل: ' + e; }
+};
+
+// بحث
+$('qBlood').onchange = renderSearch;
+function renderSearch() {
+  const b = $('qBlood').value;
+  const list = pub.filter(r => r.BloodType === b).sort((x, y) => (status(y) === 'متاح للتبرع') - (status(x) === 'متاح للتبرع'));
+  $('qRes').innerHTML = list.length ? list.map(r => {
+    const ok = status(r) === 'متاح للتبرع';
+    return `<div class="card"><div><b>${esc(r.Name)}</b> <span class="bt">${esc(r.BloodType)}</span><br>
+      <small>${esc(r.Location)}</small> <span class="tag ${ok ? 'ok' : 'no'}">${ok ? 'متاح للتبرع' : 'غير متاح حالياً'}</span></div>
+      ${ok ? `<a class="call" href="tel:${esc(r.Phone)}">📞 اتصال</a>` : ''}</div>`;
+  }).join('') : '<p>لا يوجد متبرعون مسجلون لهذه الفصيلة.</p>';
+}
+
+// المشرفون
+async function adminLogin() {
+  pass = $('aPass').value;
+  try {
+    const r = await post({action:'list', pass});
+    if (!r.ok) throw r.error;
+    adm = r.data; $('aLogin').style.display = 'none'; $('aPanel').style.display = 'block'; renderAdmin();
+  } catch (e) { $('aMsg').style.color = 'var(--no)'; $('aMsg').textContent = 'تعذر الدخول: ' + e; }
+}
+async function reloadAdmin() {
+  const r = await post({action:'list', pass});
+  adm = r.data || []; renderAdmin(); loadPublic();
+}
+function renderAdmin() {
+  const q = $('aQ').value.trim().toLowerCase();
+  $('aBody').innerHTML = adm.filter(r => !q || r.Name.toLowerCase().includes(q) || r.BloodType.toLowerCase() === q || r.BloodType.toLowerCase().includes(q))
+    .map(r => `<tr><td>${esc(r.Name)}</td><td>${esc(r.BloodType)}</td><td>${esc(r.Phone)}</td><td>${esc(r.Location)}</td><td>${esc(r.Age)}</td>
+    <td>${esc(r.LastDonationDate)}</td><td>${esc(r.ChronicDiseases)}</td><td>${status(r)}</td>
+    <td><button class="btn s" onclick="today('${r.ID}')">تبرّع اليوم</button><button class="btn s" onclick="openEdit('${r.ID}')">تعديل</button><button class="btn s d" onclick="del('${r.ID}')">حذف</button></td></tr>`).join('');
+}
+const find = id => adm.find(r => r.ID === id);
+async function today(id) {
+  const d = {...find(id), LastDonationDate: new Date().toISOString().slice(0, 10)};
+  await post({action:'update', pass, id, donor:d}); reloadAdmin();
+}
+async function del(id) {
+  if (!confirm('حذف هذا السجل نهائياً؟')) return;
+  await post({action:'delete', pass, id}); reloadAdmin();
+}
+function openEdit(id) {
+  const r = find(id); editId = id;
+  $('eName').value = r.Name; $('eBlood').value = r.BloodType; $('ePhone').value = r.Phone; $('eLoc').value = r.Location;
+  $('eAge').value = r.Age; $('eLast').value = r.LastDonationDate; $('eChr').value = r.ChronicDiseases; dlg.showModal();
+}
+async function saveEdit() {
+  const d = {Name:$('eName').value, BloodType:$('eBlood').value, Phone:$('ePhone').value, Location:$('eLoc').value,
+    Age:$('eAge').value, LastDonationDate:$('eLast').value, ChronicDiseases:$('eChr').value};
+  await post({action:'update', pass, id:editId, donor:d}); dlg.close(); reloadAdmin();
+}
+const csvSafe = v => /^[=+\-@]/.test(String(v)) ? "'" + v : String(v); // منع حقن الصيغ في Excel
+function exportCSV() {
+  const H = ['ID','Name','BloodType','Phone','Location','Age','LastDonationDate','ChronicDiseases','Status','CreatedAt'];
+  const rows = [H.join(',')].concat(adm.map(r => H.map(h => `"${csvSafe(h === 'Status' ? status(r) : r[h] ?? '').replace(/"/g, '""')}"`).join(',')));
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\ufeff' + rows.join('\n')], {type:'text/csv;charset=utf-8'}));
+  a.download = 'donors.csv'; a.click();
+}
+loadPublic();
+</script>
+</body>
+</html>
